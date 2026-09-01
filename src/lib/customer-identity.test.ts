@@ -15,7 +15,7 @@ class MemoryCustomers {
 describe('global customer identity', () => {
   it('normalizes common Indian formats to one permanent customer', async () => {
     const repository = new MemoryCustomers()
-    const first = await ensureCustomer(repository, { name: 'Meet Sharma', phone: '9876543210' }, () => 'CUS-7F29A81D')
+    const first = await ensureCustomer(repository, { name: 'Anita Rao', phone: '9876543210' }, () => 'CUS-7F29A81D')
     const second = await ensureCustomer(repository, { name: 'Different supplied name', phone: '+91 98765 43210' }, () => 'CUS-SHOULDNOT')
     expect(first.customerId).toBe('CUS-7F29A81D')
     expect(second.customerId).toBe('CUS-7F29A81D')

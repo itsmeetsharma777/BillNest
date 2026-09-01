@@ -1,24 +1,19 @@
-# BillNest API contract
+# BillNest API
 
-All endpoints return `{ "data": ... }` on success and `{ "error": { "code", "message", "requestId" } }` on failure. Protected endpoints use a secure, `HttpOnly`, `SameSite=Lax` session cookie and require a CSRF token on mutations.
+All endpoints use the `/api` prefix and return `{ "data": ... }` or `{ "error": { "code", "message" } }`.
 
-| Endpoint | Auth | Purpose |
+| Endpoint | Access | Purpose |
 | --- | --- | --- |
-| `POST /v1/auth/register/customer` | Public, rate limited | Creates the user and one global customer identity from the E.164 phone. |
-| `POST /v1/auth/register/shopkeeper` | Public, rate limited | Creates a shopkeeper user and their first shop. |
-| `POST /v1/auth/login` | Public, rate limited | Validates role-specific credentials and starts a session. |
-| `POST /v1/auth/logout` | Session | Invalidates the current session. |
-| `GET /v1/customers/lookup?phone=` | Shopkeeper | Finds a customer by normalized phone; returns only minimum customer data. |
-| `GET /v1/invoices` | Session | Paginated invoices scoped to the caller’s shop or customer identity. |
-| `POST /v1/invoices` | Shopkeeper | Validates/recalculates line items and creates an idempotent draft. |
-| `POST /v1/invoices/:id/finalize` | Owner shopkeeper | Allocates the per-shop invoice number transactionally and freezes snapshots. |
-| `POST /v1/invoices/:id/cancel` | Owner shopkeeper | Status-cancels an invoice and appends an audit event. |
-| `GET /v1/warranties` | Session | Returns only warranties owned by the customer or their shop’s items. |
-| `POST /v1/documents` | Customer | Starts a private signed upload with MIME/size validation. |
-| `POST /v1/documents/:id/ocr` | Document owner | Runs a provider-independent OCR service; always returns reviewable fields. |
-| `POST /v1/documents/:id/confirm` | Document owner | Validates edited extraction and creates the online purchase. |
-| `GET /v1/notifications` | Session | Returns caller-owned in-app notifications. |
+| `GET /api/health` | Public | Verifies that MongoDB is reachable. |
+| `POST /api/auth/register/shopkeeper` | Public, rate-limited | Creates a shopkeeper and shop. |
+| `POST /api/auth/register/customer` | Public, rate-limited | Creates a customer account and global customer record. |
+| `POST /api/auth/login` | Public, rate-limited | Creates an authenticated session. |
+| `POST /api/auth/logout` | Session + CSRF | Ends the session. |
+| `GET` / `PATCH /api/shops/me` | Shopkeeper; PATCH also CSRF | Reads or updates the active shop profile. |
+| `GET /api/customers/lookup?phone=` | Shopkeeper | Returns the minimum customer details for an E.164 phone. |
+| `GET /api/invoices` | Session | Returns only the caller’s invoices. |
+| `POST /api/invoices` | Shopkeeper + CSRF | Recalculates and stores a draft or paid invoice. |
 
-## Authorization invariant
+Protected mutations require both the `billnest_session` HttpOnly cookie and matching `billnest_csrf` cookie / `X-CSRF-Token` header. The frontend obtains the CSRF cookie during registration or login.
 
-Every query begins from the caller’s scoped `shop_id` or `customer_id`; public customer IDs, UUIDs, and invoice numbers are never authorization credentials. A shopkeeper query must include `invoice.shop_id = session.shop_id`. A customer query must include `invoice.customer_id = session.customer_id`.
+Authorization is always applied by the server query’s `shopId` or `customerId`. Client-supplied IDs, invoice numbers, and customer IDs are not authorization proof.
