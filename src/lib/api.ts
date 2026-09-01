@@ -205,7 +205,7 @@ export async function authenticate(
     };
   if (role === "customer" && response.customer)
     return {
-      profileName: response.user.name,
+      profileName: string(response.customer.name) || response.user.name,
       customer: toCustomer(response.customer),
     };
   throw new ApiError(
