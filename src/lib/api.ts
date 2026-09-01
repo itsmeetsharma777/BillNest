@@ -38,10 +38,26 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       503,
     );
   }
-  const payload = (await response.json().catch(() => ({}))) as ApiPayload<T>;
+
+  const rawBody = await response.text().catch(() => "");
+  let payload = {} as ApiPayload<T>;
+  if (rawBody) {
+    try {
+      payload = JSON.parse(rawBody) as ApiPayload<T>;
+    } catch {
+      payload = {
+        error: {
+          message: rawBody.slice(0, 300) || `Request failed with status ${response.status}`,
+        },
+      };
+    }
+  }
+
   if (!response.ok)
     throw new ApiError(
-      payload.error?.message || "The request could not be completed.",
+      payload.error?.message ||
+        response.statusText ||
+        `The request could not be completed (status ${response.status}).`,
       response.status,
     );
   return payload.data as T;
