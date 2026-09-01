@@ -24,7 +24,6 @@ import {
   createInvoice,
   endSession,
   fetchInvoices,
-  isApiUnavailable,
   updateShop,
 } from "./lib/api";
 import type { Customer, Invoice, Notification, Role, Shop } from "./types";
@@ -70,9 +69,7 @@ export default function App() {
   const [notifications, setNotifications] = useState<Notification[]>(() =>
     load(`${storageVersion}-notifications`, []),
   );
-  const [session, setSession] = useState<Session | null>(() =>
-    load(`${storageVersion}-session`, null),
-  );
+  const [session, setSession] = useState<Session | null>(null);
   const [theme, setTheme] = useState<ThemePreference>(() =>
     load("billnest-theme", "system"),
   );
@@ -129,73 +126,30 @@ export default function App() {
     setScreen("auth");
   };
   const signIn = async (details: AuthSubmission) => {
-    const profileName =
-      details.fullName.trim() ||
-      (role === "shopkeeper" ? "Shop owner" : "Customer");
+    const signedIn = await authenticate(authMode, role, details);
+    const nextSession: Session =
+      role === "shopkeeper"
+        ? {
+            role,
+            profileName: signedIn.profileName,
+            shop: signedIn.shop!,
+            backend: true,
+          }
+        : {
+            role,
+            profileName: signedIn.profileName,
+            customer: signedIn.customer!,
+            backend: true,
+          };
+    setSession(nextSession);
     try {
-      const signedIn = await authenticate(authMode, role, details);
-      const nextSession: Session =
-        role === "shopkeeper"
-          ? {
-              role,
-              profileName: signedIn.profileName,
-              shop: signedIn.shop!,
-              backend: true,
-            }
-          : {
-              role,
-              profileName: signedIn.profileName,
-              customer: signedIn.customer!,
-              backend: true,
-            };
-      setSession(nextSession);
-      try {
-        setInvoices(await fetchInvoices());
-      } catch {
-        setInvoices([]);
-      }
-      setScreen("app");
-      setView("dashboard");
-      setToast("Signed in securely. Your workspace is connected to MongoDB.");
-      return;
-    } catch (error) {
-      if (!isApiUnavailable(error)) throw error;
+      setInvoices(await fetchInvoices());
+    } catch {
+      setInvoices([]);
     }
-    if (role === "shopkeeper") {
-      const createdShop: Shop = {
-        id: crypto.randomUUID(),
-        name: details.shopName.trim() || "My Shop",
-        owner: profileName,
-        phone: details.contact || "",
-        email: details.email || "",
-        address: details.shopAddress || "",
-        state: "",
-        gstin: "",
-      };
-      setSession({ role, profileName, shop: createdShop });
-      setScreen("app");
-      setView("dashboard");
-      setToast(
-        "Atlas is not connected yet. This empty preview stays only in this browser.",
-      );
-    } else {
-      const customer: Customer = {
-        id: crypto.randomUUID(),
-        customerId: "CUS-LOCAL",
-        name: profileName,
-        phone: details.contact,
-        normalizedPhone: details.contact,
-        email: details.email || undefined,
-        address: details.shopAddress || undefined,
-      };
-      setCustomers((current) => [...current, customer]);
-      setSession({ role, profileName, customer });
-      setScreen("app");
-      setView("dashboard");
-      setToast(
-        "Atlas is not connected yet. This empty preview stays only in this browser.",
-      );
-    }
+    setScreen("app");
+    setView("dashboard");
+    setToast("Signed in securely. Your workspace is connected to MongoDB.");
   };
   const logout = () => {
     if (session?.backend) void endSession().catch(() => undefined);
