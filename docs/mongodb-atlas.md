@@ -21,10 +21,9 @@ CLIENT_ORIGIN=http://localhost:5173
 
 Generate each secret with `openssl rand -hex 32` and never put it in client-side `VITE_` variables.
 
-5. Create the required unique indexes, then start both services:
+5. Start both services. The API creates the required indexes automatically on its first database connection:
 
 ```bash
-npm run db:indexes
 npm run dev
 ```
 

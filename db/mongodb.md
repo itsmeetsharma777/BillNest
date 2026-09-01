@@ -1,6 +1,6 @@
 # MongoDB data model
 
-BillNest now uses MongoDB rather than PostgreSQL. `npm run db:indexes` creates every required index once `MONGODB_URI` is configured.
+BillNest now uses MongoDB rather than PostgreSQL. The API creates every required index automatically once `MONGODB_URI` is configured. `npm run db:indexes` remains available as a manual verification command.
 
 | Collection | Purpose | Critical indexes |
 | --- | --- | --- |

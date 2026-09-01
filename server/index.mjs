@@ -556,6 +556,10 @@ app.use((error, _request, response, _next) => {
     error.status ? error.message : "Something went wrong. Please try again.",
   );
 });
-app.listen(port, () =>
-  console.log(`BillNest API listening on http://localhost:${port}`),
-);
+export default app;
+
+if (!process.env.VERCEL) {
+  app.listen(port, () =>
+    console.log(`BillNest API listening on http://localhost:${port}`),
+  );
+}

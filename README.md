@@ -7,11 +7,10 @@ BillNest is a responsive GST billing and warranty-management application. It sta
 ```bash
 npm install
 cp .env.example .env
-npm run db:indexes
 npm run dev
 ```
 
-Open `http://localhost:5173`. The frontend is served by Vite and the API is served on port `4000`. Until MongoDB Atlas is configured, the app permits an explicitly labelled empty browser-only preview; no claim is made that it is synced.
+Open `http://localhost:5173`. The frontend is served by Vite and the API is served on port `4000`. Required MongoDB indexes are created automatically when the API first connects. Until MongoDB Atlas is configured, the app permits an explicitly labelled empty browser-only preview; no claim is made that it is synced.
 
 Detailed Atlas steps are in [`docs/mongodb-atlas.md`](docs/mongodb-atlas.md). The data model is in [`db/mongodb.md`](db/mongodb.md).
 
