@@ -11,6 +11,8 @@ export class ApiError extends Error {
   }
 }
 
+const API_BASE = import.meta.env.VITE_API_URL || "";
+
 const csrfToken = () =>
   document.cookie
     .split("; ")
@@ -27,7 +29,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     headers.set("X-CSRF-Token", csrfToken());
   let response: Response;
   try {
-    response = await fetch(path, {
+    response = await fetch(`${API_BASE}${path}`, {
       ...options,
       headers,
       credentials: "include",
