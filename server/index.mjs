@@ -27,6 +27,12 @@ import {
 const app = express();
 const port = Number(process.env.PORT || 4000);
 const origin = process.env.CLIENT_ORIGIN || "http://localhost:5173";
+const corsOrigin = (requestOrigin, callback) => {
+  const isLocalDevelopmentOrigin =
+    process.env.NODE_ENV !== "production" &&
+    /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(requestOrigin || "");
+  callback(null, isLocalDevelopmentOrigin || requestOrigin === origin);
+};
 
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32)
   console.warn(
@@ -34,7 +40,7 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32)
   );
 app.disable("x-powered-by");
 app.use(helmet({ crossOriginResourcePolicy: false }));
-app.use(cors({ origin, credentials: true }));
+app.use(cors({ origin: corsOrigin, credentials: true }));
 app.use(express.json({ limit: "200kb" }));
 app.use(cookieParser());
 app.use(
