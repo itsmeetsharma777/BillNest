@@ -385,6 +385,9 @@ export function Landing({
         <Logo />
         <span>© 2026 BillNest. Built by Meet Sharma.</span>
         <nav>
+          <a href="mailto:meetsharma0702@gmail.com?subject=BillNest%20support">
+            Support: Meet Sharma
+          </a>
           <a href="#">Privacy</a>
           <a href="#">Terms</a>
           <a href="#faq">Help center</a>
@@ -539,11 +542,11 @@ export function AuthScreen({
               </label>
               {register && (
                 <label>
-                  Email {role === "customer" && <small>Optional</small>}
+                  Email
                   <input
                     name="email"
                     type="email"
-                    required={role === "shopkeeper"}
+                    required
                     placeholder="you@example.com"
                   />
                 </label>

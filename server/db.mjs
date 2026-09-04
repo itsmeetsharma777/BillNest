@@ -4,6 +4,18 @@ let client;
 let database;
 let indexesPromise;
 
+export function assertMongoUri(uri) {
+  if (!uri)
+    throw new Error(
+      "MONGODB_URI is not configured. Add it to .env before starting the API.",
+    );
+  if (/<[^>]+>/.test(uri) || /db_password/i.test(uri))
+    throw new Error(
+      "MONGODB_URI still contains a placeholder. Replace <db_password> with your URL-encoded Atlas database-user password.",
+    );
+  return uri;
+}
+
 async function ensureIndexes(db) {
   await Promise.all([
     db
@@ -33,11 +45,7 @@ export async function getDb() {
     await indexesPromise;
     return database;
   }
-  const uri = process.env.MONGODB_URI;
-  if (!uri)
-    throw new Error(
-      "MONGODB_URI is not configured. Add it to .env before starting the API.",
-    );
+  const uri = assertMongoUri(process.env.MONGODB_URI);
   client = new MongoClient(uri, { serverSelectionTimeoutMS: 8_000 });
   await client.connect();
   database = client.db(process.env.MONGODB_DB_NAME || "billnest");

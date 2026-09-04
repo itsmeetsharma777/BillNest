@@ -799,7 +799,7 @@ export function ShopSettings({
   toast,
 }: {
   shop: Shop;
-  onSave: (shop: Shop) => void;
+  onSave: (shop: Shop) => Promise<Shop>;
   toast: (message: string) => void;
 }) {
   const [draft, setDraft] = useState(shop);
@@ -817,10 +817,19 @@ export function ShopSettings({
             </div>
           </header>
           <form
-            onSubmit={(event) => {
+            onSubmit={async (event) => {
               event.preventDefault();
-              onSave(draft);
-              toast("Shop settings saved successfully.");
+              try {
+                const saved = await onSave(draft);
+                setDraft(saved);
+                toast("Shop settings saved successfully.");
+              } catch (error) {
+                toast(
+                  error instanceof Error
+                    ? error.message
+                    : "Shop settings could not be saved. Please retry.",
+                );
+              }
             }}
           >
             <div className="form-grid">
@@ -900,7 +909,10 @@ export function InvoiceBuilder({
   customers: Customer[];
   invoices: Invoice[];
   shop: Shop;
-  onSave: (invoice: Invoice, customer: Customer) => void;
+  onSave: (
+    invoice: Invoice,
+    customer: Customer,
+  ) => Promise<{ invoice: Invoice; customer: Customer }>;
   onExit: () => void;
   toast: (message: string) => void;
 }) {
@@ -960,7 +972,7 @@ export function InvoiceBuilder({
         return next;
       }),
     );
-  const create = (status: "DRAFT" | "PAID") => {
+  const create = async (status: "DRAFT" | "PAID") => {
     if (
       !normalisePhone(phone) ||
       !name.trim() ||
@@ -998,15 +1010,22 @@ export function InvoiceBuilder({
       ...totals,
       amountPaid: status === "PAID" ? totals.total : 0,
     };
-    window.setTimeout(() => {
-      onSave(invoice, customer);
-      setSaving(false);
+    try {
+      const saved = await onSave(invoice, customer);
       if (status === "PAID") {
-        downloadInvoice(invoice, customer, shop);
-        toast(`Invoice ${invoice.number} created successfully.`);
+        downloadInvoice(saved.invoice, saved.customer, shop);
+        toast(`Invoice ${saved.invoice.number} created successfully.`);
       } else toast("Draft saved successfully.");
       onExit();
-    }, 300);
+    } catch (error) {
+      toast(
+        error instanceof Error
+          ? error.message
+          : "The invoice could not be saved. Please retry.",
+      );
+    } finally {
+      setSaving(false);
+    }
   };
   return (
     <section className="invoice-builder">

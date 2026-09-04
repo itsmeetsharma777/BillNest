@@ -166,43 +166,28 @@ export default function App() {
   const myInvoices = invoices.filter(
     (invoice) => invoice.customerId === activeCustomer?.id,
   );
-  const addShopInvoice = (invoice: Invoice, customer: Customer) => {
+  const addShopInvoice = async (invoice: Invoice, customer: Customer) => {
+    if (!session?.backend)
+      throw new Error("Sign in again before creating an invoice.");
+    const saved = await createInvoice(invoice, customer);
     setCustomers((current) =>
-      current.some((item) => item.id === customer.id)
+      current.some((item) => item.id === saved.customer.id)
         ? current
-        : [...current, customer],
+        : [...current, saved.customer],
     );
-    setInvoices((current) => [invoice, ...current]);
+    setInvoices((current) => [saved.invoice, ...current]);
     setNotifications((current) => [
       {
         id: crypto.randomUUID(),
         title: "Invoice created",
-        description: `${invoice.number} is ready to download or print.`,
+        description: `${saved.invoice.number} is ready to download or print.`,
         date: "Just now",
         read: false,
         type: "invoice",
       },
       ...current,
     ]);
-    if (session?.backend)
-      void createInvoice(invoice, customer)
-        .then((saved) => {
-          setCustomers((current) =>
-            current.some((item) => item.id === saved.customer.id)
-              ? current
-              : [...current, saved.customer],
-          );
-          setInvoices((current) =>
-            current.map((item) =>
-              item.id === invoice.id ? saved.invoice : item,
-            ),
-          );
-        })
-        .catch(() =>
-          setToast(
-            "The bill was downloaded, but MongoDB could not save it. Please try again.",
-          ),
-        );
+    return saved;
   };
   const addOnlineInvoice = (invoice: Invoice) => {
     setInvoices((current) => [invoice, ...current]);
@@ -221,24 +206,14 @@ export default function App() {
   const unread = notifications.filter(
     (notification) => !notification.read,
   ).length;
-  const setShop = (shop: Shop) => {
+  const setShop = async (shop: Shop) => {
+    if (!session?.backend)
+      throw new Error("Sign in again before saving settings.");
+    const saved = await updateShop(shop);
     setSession((current) =>
-      current ? { ...current, shop, profileName: shop.owner } : current,
+      current ? { ...current, shop: saved, profileName: saved.owner } : current,
     );
-    if (session?.backend)
-      void updateShop(shop)
-        .then((saved) =>
-          setSession((current) =>
-            current
-              ? { ...current, shop: saved, profileName: saved.owner }
-              : current,
-          ),
-        )
-        .catch(() =>
-          setToast(
-            "Saved locally, but MongoDB could not be updated. Please retry.",
-          ),
-        );
+    return saved;
   };
 
   if (screen === "landing")
@@ -338,11 +313,14 @@ function ShopContent({
   invoices: Invoice[];
   customers: Customer[];
   shop: Shop;
-  setShop: (shop: Shop) => void;
+  setShop: (shop: Shop) => Promise<Shop>;
   setInvoices: (invoices: Invoice[]) => void;
   onView: (view: View) => void;
   toast: (message: string) => void;
-  onSave: (invoice: Invoice, customer: Customer) => void;
+  onSave: (
+    invoice: Invoice,
+    customer: Customer,
+  ) => Promise<{ invoice: Invoice; customer: Customer }>;
   notifications: Notification[];
   setNotifications: (notifications: Notification[]) => void;
 }) {
